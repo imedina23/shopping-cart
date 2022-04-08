@@ -6,6 +6,7 @@ using shopping.Data.Entities;
 using shopping.Enums;
 using shopping.Helpers;
 using shopping.Models;
+using SignInResult = Microsoft.AspNetCore.Identity.SignInResult;
 
 namespace shopping.Controllers
 {
@@ -39,13 +40,21 @@ namespace shopping.Controllers
         {
             if (ModelState.IsValid)
             {
-                Microsoft.AspNetCore.Identity.SignInResult result = await _userHelper.LoginAsync(model);
+                SignInResult result = await _userHelper.LoginAsync(model);
                 if (result.Succeeded)
                 {
                     return RedirectToAction("Index", "Home");
                 }
 
-                ModelState.AddModelError(string.Empty, "Incorrect email or password.");
+                if (result.IsLockedOut)
+                {
+                    ModelState.AddModelError(string.Empty, "You have exceeded the maximum number of attempts, your account is locked, please try again in 5 minutes.");
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, "Incorrect email or password.");
+                }
+
             }
 
             return View(model);

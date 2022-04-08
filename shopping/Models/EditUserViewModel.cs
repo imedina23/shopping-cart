@@ -40,9 +40,9 @@ namespace shopping.Models
         public string ImageFullPath => ImageId == Guid.Empty
             ? $"https://localhost:7288/images/noimage.png"
             : $"https://shopping23.blob.core.windows.net/users/{ImageId}";
-
+        
         [Display(Name = "Image")]
-        public IFormFile ImageFile { get; set; }
+        public IFormFile? ImageFile { get; set; }
 
         [Display(Name = "Country")]
         [Range(1, int.MaxValue, ErrorMessage = "Please select a Country")]
