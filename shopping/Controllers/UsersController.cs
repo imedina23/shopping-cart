@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using shopping.Common;
 using shopping.Data;
 using shopping.Data.Entities;
 using shopping.Enums;
@@ -17,13 +18,15 @@ namespace shopping.Controllers
         private readonly IUserHelper _userHelper;
         private readonly IBlobHelper _blobHelper;
         private readonly ICombosHelper _combosHelper;
+        private readonly IMailHelper _mailHelper;
 
-        public UsersController(DataContext context, IUserHelper userHelper, IBlobHelper blobHelper, ICombosHelper combosHelper)
+        public UsersController(DataContext context, IUserHelper userHelper, IBlobHelper blobHelper, ICombosHelper combosHelper, IMailHelper mailHelper)
         {
             _context = context;
             _userHelper = userHelper;
             _blobHelper = blobHelper;
             _combosHelper = combosHelper;
+            _mailHelper = mailHelper;
         }
 
         public async Task<IActionResult> Index()
@@ -72,12 +75,33 @@ namespace shopping.Controllers
                     return View(model);
                 }
 
-               
 
-                
-                
-                    return RedirectToAction("Index", "Users");
-                
+
+
+
+
+                string myToken = await _userHelper.GenerateEmailConfirmationTokenAsync(user);
+                string tokenLink = Url.Action("ConfirmEmail", "Account", new
+                {
+                    userid = user.Id,
+                    token = myToken
+                }, protocol: HttpContext.Request.Scheme);
+
+                Response response = _mailHelper.SendMail(
+                    $"{model.FirstName} {model.LastName}",
+                    model.Username,
+                    "Shopping - Confirmation Email",
+                    $"<h1>Shopping - Confirmation Email</h1>" +
+                        $"To enable the user please click on the following link:, " +
+                        $"<hr/><br/><br/><p><a href = \"{tokenLink}\">Confirm Email</a></p>");
+                if (response.IsSuccess)
+                {
+                    ViewBag.Message = "The instructions to enable the administrator have been sent to the mail.";
+                    return View(model);
+                }
+
+                ModelState.AddModelError(string.Empty, response.Message);
+
             }
 
             model.Countries = await _combosHelper.GetComboCountriesAsync();
